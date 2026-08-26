@@ -20,6 +20,7 @@ app.use((req, res, next) => {
 
 
 
+
 // Enable AWS X-Ray Express Middleware
 
 app.use(AWSXRay.express.openSegment('NotificationsService'));
