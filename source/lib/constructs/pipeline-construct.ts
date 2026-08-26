@@ -40,27 +40,42 @@ export class PipelineConstruct extends Construct {
 
     const sourceOutput = new codepipeline.Artifact('SourceOutput');
 
+    // Create source action first so we can reference it in triggers
+    const sourceAction = new codepipeline_actions.CodeStarConnectionsSourceAction({
+      actionName: 'GitHubSource',
+      owner: 'HazemElnagar',
+      repo: 'Containerized-Microservices-with-ECS-Fargate-and-Service-Discovery',
+      branch: 'main',
+      connectionArn: connection.attrConnectionArn,
+      output: sourceOutput,
+    });
+
     // CodePipeline definition
     this.pipeline = new codepipeline.Pipeline(this, 'ContainerizedMicroservicesPipeline', {
       pipelineName: 'microservices-pipeline',
       artifactBucket: this.artifactBucket,
       restartExecutionOnUpdate: true,
       pipelineType: codepipeline.PipelineType.V2,
+      // V2 pipelines require explicit triggers — without this, the pipeline NEVER fires on push
+      triggers: [
+        {
+          providerType: codepipeline.ProviderType.CODE_STAR_SOURCE_CONNECTION,
+          gitConfiguration: {
+            sourceAction: sourceAction,
+            pushFilter: [
+              {
+                branchesIncludes: ['main'],
+              },
+            ],
+          },
+        },
+      ],
     });
 
     // Source Stage
     this.pipeline.addStage({
       stageName: 'Source',
-      actions: [
-        new codepipeline_actions.CodeStarConnectionsSourceAction({
-          actionName: 'GitHubSource',
-          owner: 'HazemElnagar',
-          repo: 'Containerized-Microservices-with-ECS-Fargate-and-Service-Discovery',
-          branch: 'main',
-          connectionArn: connection.attrConnectionArn,
-          output: sourceOutput,
-        }),
-      ],
+      actions: [sourceAction],
     });
 
     const buildActions: codepipeline_actions.CodeBuildAction[] = [];
@@ -87,6 +102,8 @@ export class PipelineConstruct extends Construct {
               commands: [
                 'echo Logging in to Amazon ECR...',
                 'aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URI',
+                'echo Fetching full git history for change detection...',
+                'git fetch --unshallow || true',
                 'echo Checking for changes in microservices/$SERVICE_NAME/...',
                 'export PREV_COMMIT=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD) && export CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD) && if echo "$CHANGED_FILES" | grep -q "^microservices/$SERVICE_NAME/"; then export SHOULD_BUILD=true; else export SHOULD_BUILD=false; fi && echo "SHOULD_BUILD=$SHOULD_BUILD"',
               ],
@@ -150,6 +167,7 @@ export class PipelineConstruct extends Construct {
           pre_build: {
             commands: [
               'echo Checking for changes in frontend/ or frontend-construct...',
+              'git fetch --unshallow || true',
               'export PREV_COMMIT=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD) && export CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD) && if echo "$CHANGED_FILES" | grep -qE "^(frontend/|source/lib/constructs/frontend-construct\.ts)"; then export SHOULD_BUILD=true; else export SHOULD_BUILD=false; fi && echo "SHOULD_BUILD=$SHOULD_BUILD"',
             ],
           },
