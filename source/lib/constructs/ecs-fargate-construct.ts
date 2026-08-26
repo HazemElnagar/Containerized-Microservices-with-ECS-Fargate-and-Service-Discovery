@@ -140,6 +140,10 @@ export class EcsFargateConstruct extends Construct {
       deploymentController: {
         type: ecs.DeploymentControllerType.ECS, // Native ECS Blue/Green deployment controller
       },
+      circuitBreaker: {
+        rollback: true,
+      },
+      minHealthyPercent: 100,
     });
 
     if (def.targetGroup) {
