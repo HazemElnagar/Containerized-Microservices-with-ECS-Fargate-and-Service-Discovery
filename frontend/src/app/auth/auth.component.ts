@@ -1,7 +1,6 @@
-import { Component, Output, EventEmitter, inject } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../core/api.service';
 
 @Component({
   selector: 'app-auth',
@@ -13,8 +12,6 @@ import { ApiService } from '../core/api.service';
 export class AuthComponent {
   @Output() loginSuccess = new EventEmitter<string>();
 
-  private api = inject(ApiService);
-
   email = '';
   password = '';
   isLoading = false;
@@ -25,11 +22,18 @@ export class AuthComponent {
     this.error = '';
 
     try {
-      const data = await this.api.post('/auth/login', {
-        email: this.email,
-        password: this.password
+      const response = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: this.email, password: this.password })
       });
 
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Login failed (${response.status})`);
+      }
+
+      const data = await response.json();
       sessionStorage.setItem('session_token', data.token);
       this.isLoading = false;
       this.loginSuccess.emit(data.token);

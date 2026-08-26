@@ -1,7 +1,6 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, inject, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../core/api.service';
 
 interface Order {
   id: string;
@@ -26,14 +25,14 @@ export class OrdersDashboardComponent implements OnInit, OnChanges {
   isLoading = true;
   fetchError = '';
 
-  private api = inject(ApiService);
-
   // --- Create Order Modal ---
   showModal = false;
   isCreating = false;
   createError = '';
   createSuccess = '';
   newOrder = { item: '', quantity: 1, price: 0 };
+
+  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     if (this.token) {
@@ -50,15 +49,22 @@ export class OrdersDashboardComponent implements OnInit, OnChanges {
   async fetchOrders() {
     this.isLoading = true;
     this.fetchError = '';
+    this.cdr.detectChanges();
     try {
-      this.orders = await this.api.get('/orders/list', {
-        'Authorization': this.token
+      const response = await fetch('/orders/list', {
+        headers: { 'Authorization': this.token }
       });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to load orders (${response.status})`);
+      }
+      this.orders = await response.json();
     } catch (err: any) {
       this.fetchError = err.message || 'Failed to load orders.';
       console.error('[Orders] Fetch error:', err);
     } finally {
       this.isLoading = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -81,15 +87,26 @@ export class OrdersDashboardComponent implements OnInit, OnChanges {
     this.isCreating = true;
     this.createError = '';
     this.createSuccess = '';
+    this.cdr.detectChanges();
     try {
-      const result = await this.api.post('/orders', {
-        authToken: this.token,
-        item: this.newOrder.item,
-        quantity: this.newOrder.quantity,
-        price: this.newOrder.price,
-      }, {
-        'Authorization': this.token,
+      const response = await fetch('/orders/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': this.token,
+        },
+        body: JSON.stringify({
+          authToken: this.token,
+          item: this.newOrder.item,
+          quantity: this.newOrder.quantity,
+          price: this.newOrder.price,
+        })
       });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Could not place order (${response.status})`);
+      }
+      const result = await response.json();
       this.createSuccess = `✅ Order ${result.order.id} placed! A notification has been sent.`;
       this.orders.unshift(result.order);
       this.orderCreated.emit();
@@ -98,6 +115,7 @@ export class OrdersDashboardComponent implements OnInit, OnChanges {
       console.error('[Orders] Create error:', err);
     } finally {
       this.isCreating = false;
+      this.cdr.detectChanges();
     }
   }
 }

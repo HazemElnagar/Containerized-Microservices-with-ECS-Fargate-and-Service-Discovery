@@ -1,6 +1,5 @@
-import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService } from '../core/api.service';
 
 interface Notification {
   id: string;
@@ -24,7 +23,7 @@ export class NotificationsWidgetComponent implements OnInit, OnDestroy, OnChange
   isOpen = false;
   private pollInterval: ReturnType<typeof setInterval> | null = null;
 
-  private api = inject(ApiService);
+  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.fetchNotifications();
@@ -56,10 +55,14 @@ export class NotificationsWidgetComponent implements OnInit, OnDestroy, OnChange
 
   async fetchNotifications() {
     try {
-      this.notifications = await this.api.get('/notifications/list');
+      const response = await fetch('/notifications/list');
+      if (response.ok) {
+        this.notifications = await response.json();
+      }
     } catch (err: any) {
       console.error('[Notifications] Fetch error:', err.message);
-      // Keep existing notifications rather than clearing on error
+    } finally {
+      this.cdr.detectChanges();
     }
   }
 
