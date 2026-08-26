@@ -78,6 +78,23 @@ export class PipelineConstruct extends Construct {
       actions: [sourceAction],
     });
 
+    // Grant pipeline role EventBridge permissions so V2 triggers can create
+    // the CloudWatch Events rule that listens for GitHub push events.
+    // Without this, the trigger config is inert — the pipeline never fires.
+    this.pipeline.addToRolePolicy(new iam.PolicyStatement({
+      actions: [
+        'events:DescribeRule',
+        'events:PutRule',
+        'events:DeleteRule',
+        'events:PutTargets',
+        'events:RemoveTargets',
+        'events:ListTargetsByRule',
+      ],
+      resources: [
+        `arn:aws:events:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:rule/*`,
+      ],
+    }));
+
     const buildActions: codepipeline_actions.CodeBuildAction[] = [];
     const deployActions: codepipeline_actions.EcsDeployAction[] = [];
 
