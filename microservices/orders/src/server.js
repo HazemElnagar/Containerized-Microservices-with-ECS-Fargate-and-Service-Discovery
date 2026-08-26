@@ -162,6 +162,7 @@ app.get('/orders/:id', authenticateSession, (req, res) => {
 // CodePipeline Test Comment
 
 // Close AWS X-Ray Express Middleware
+
 app.use(AWSXRay.express.closeSegment());
 
 app.listen(PORT, () => {
