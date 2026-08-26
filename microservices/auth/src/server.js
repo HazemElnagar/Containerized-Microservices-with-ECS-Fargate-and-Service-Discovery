@@ -127,6 +127,7 @@ app.get('/auth/me', async (req, res) => {
 
   res.status(401).json({ error: 'Unauthorized: Invalid or expired session' });
 });
+
 // CodePipeline Test Comment
 
 // Close AWS X-Ray Express Middleware
