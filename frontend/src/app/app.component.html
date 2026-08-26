@@ -1,0 +1,23 @@
+<div class="container animate-fade-in">
+  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; padding-bottom: 1rem; border-bottom: 1px solid var(--glass-border);">
+    <div>
+      <h1 class="text-gradient" style="margin: 0;">MicroServices Portal</h1>
+      <div style="color: var(--text-secondary); font-size: 0.9rem;">ECS Fargate Architecture</div>
+    </div>
+    
+    <div *ngIf="isAuthenticated">
+      <button class="btn-primary" style="background: rgba(255,255,255,0.1); box-shadow: none;" (click)="logout()">
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <app-auth *ngIf="!isAuthenticated" (loginSuccess)="onLoginSuccess($event)"></app-auth>
+    
+    <ng-container *ngIf="isAuthenticated">
+      <app-orders-dashboard [token]="sessionToken"></app-orders-dashboard>
+      <app-notifications-widget [token]="sessionToken"></app-notifications-widget>
+    </ng-container>
+  </main>
+</div>

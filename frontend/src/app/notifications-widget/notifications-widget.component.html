@@ -1,0 +1,42 @@
+<div style="position: fixed; bottom: 2rem; right: 2rem; z-index: 100;">
+
+  <!-- Notification Panel -->
+  <div *ngIf="isOpen" class="glass-panel animate-fade-in"
+       style="width: 320px; margin-bottom: 1rem; padding: 1rem; border-color: var(--accent-color); max-height: 420px; overflow-y: auto;">
+    <h3 style="margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+      🔔 Notifications
+    </h3>
+
+    <div *ngIf="notifications.length === 0"
+         style="color: var(--text-secondary); text-align: center; padding: 1.5rem 0;">
+      No notifications yet.<br>
+      <span style="font-size: 0.8rem;">Place an order to see one appear here!</span>
+    </div>
+
+    <div *ngFor="let notif of notifications | slice:0:10"
+         class="animate-fade-in"
+         style="padding: 0.75rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.85rem; border-left: 3px solid var(--accent-color);">
+      <div style="font-weight: 600; margin-bottom: 0.25rem; color: var(--accent-color);">
+        📦 {{ notif.orderId }}
+      </div>
+      <div style="color: var(--text-primary); line-height: 1.4;">{{ notif.message }}</div>
+      <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.35rem;">
+        To: {{ notif.recipient }} · {{ formatTime(notif.timestamp) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Bell Button -->
+  <button class="btn-primary" (click)="toggle()"
+          style="position: relative; border-radius: 50%; width: 60px; height: 60px; padding: 0; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.6);">
+    <span style="font-size: 1.5rem;">
+      <ng-container *ngIf="isOpen">✕</ng-container>
+      <ng-container *ngIf="!isOpen">🔔</ng-container>
+    </span>
+    <!-- Unread badge — only shows new notifications since panel was last opened -->
+    <div *ngIf="unreadCount > 0 && !isOpen"
+         style="position: absolute; top: 0; right: 0; background: var(--danger-color); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.75rem; display: flex; align-items: center; justify-content: center;">
+      {{ unreadCount }}
+    </div>
+  </button>
+</div>

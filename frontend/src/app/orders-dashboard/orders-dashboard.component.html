@@ -1,0 +1,112 @@
+<!-- Orders Dashboard -->
+<div class="glass-panel animate-fade-in delay-100">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h2>Recent Orders</h2>
+    <button class="btn-primary" (click)="openModal()">+ New Order</button>
+  </div>
+
+  <div *ngIf="isLoading" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+    Loading orders...
+  </div>
+
+  <div *ngIf="!isLoading && orders.length === 0"
+       style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+    No orders yet. Click <strong>+ New Order</strong> to place your first one!
+  </div>
+
+  <div *ngIf="!isLoading" class="grid-2">
+    <div *ngFor="let order of orders; let i = index"
+         class="glass-panel animate-fade-in"
+         [ngStyle]="{'animation-delay': (200 + i * 100) + 'ms'}"
+         style="padding: 1.5rem; background: rgba(15, 23, 42, 0.4);">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+        <span style="font-weight: 600; color: var(--accent-color);">{{ order.id }}</span>
+        <span [ngStyle]="{'color': order.status === 'Delivered' ? 'var(--success-color)' :
+                                   order.status === 'Shipped'   ? '#38bdf8' : 'var(--text-secondary)'}">
+          {{ order.status }}
+        </span>
+      </div>
+      <h3 style="margin-bottom: 0.5rem; font-size: 1.1rem;">{{ order.item }}</h3>
+      <div style="color: var(--text-secondary); font-size: 0.9rem; display: flex; justify-content: space-between;">
+        <span>Qty: {{ order.quantity }}</span>
+        <span>${{ order.totalPrice | number:'1.2-2' }}</span>
+      </div>
+      <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
+        {{ order.date }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Create Order Modal ───────────────────────────────────── -->
+<div *ngIf="showModal"
+     style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: flex; align-items: center; justify-content: center;"
+     (click)="closeModal()">
+
+  <div class="glass-panel animate-fade-in"
+       style="width: 420px; padding: 2rem; border-color: var(--accent-color);"
+       (click)="$event.stopPropagation()">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h3 style="margin: 0;">📦 Place New Order</h3>
+      <button (click)="closeModal()"
+              style="background: none; border: none; color: var(--text-secondary); font-size: 1.4rem; cursor: pointer; line-height: 1;">✕</button>
+    </div>
+
+    <!-- Success message -->
+    <div *ngIf="createSuccess"
+         style="background: rgba(34,197,94,0.15); border: 1px solid var(--success-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--success-color);">
+      {{ createSuccess }}
+    </div>
+
+    <!-- Error message -->
+    <div *ngIf="createError"
+         style="background: rgba(239,68,68,0.15); border: 1px solid var(--danger-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--danger-color);">
+      {{ createError }}
+    </div>
+
+    <div *ngIf="!createSuccess">
+      <!-- Item Name -->
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem;">Item Name *</label>
+        <input [(ngModel)]="newOrder.item"
+               placeholder="e.g. Mechanical Keyboard"
+               style="width: 100%; box-sizing: border-box; padding: 0.65rem 0.9rem; background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem;" />
+      </div>
+
+      <!-- Quantity -->
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem;">Quantity *</label>
+        <input [(ngModel)]="newOrder.quantity"
+               type="number" min="1"
+               style="width: 100%; box-sizing: border-box; padding: 0.65rem 0.9rem; background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem;" />
+      </div>
+
+      <!-- Unit Price -->
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem;">Unit Price (USD) *</label>
+        <input [(ngModel)]="newOrder.price"
+               type="number" min="0.01" step="0.01"
+               placeholder="e.g. 29.99"
+               style="width: 100%; box-sizing: border-box; padding: 0.65rem 0.9rem; background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem;" />
+      </div>
+
+      <!-- Total preview -->
+      <div *ngIf="newOrder.quantity > 0 && newOrder.price > 0"
+           style="text-align: right; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+        Total: <strong style="color: var(--text-primary)">${{ (newOrder.quantity * newOrder.price) | number:'1.2-2' }}</strong>
+      </div>
+
+      <button class="btn-primary"
+              style="width: 100%;"
+              [disabled]="isCreating"
+              (click)="createOrder()">
+        {{ isCreating ? 'Placing Order...' : 'Place Order' }}
+      </button>
+    </div>
+
+    <button *ngIf="createSuccess" class="btn-primary" style="width: 100%; margin-top: 0.5rem;" (click)="closeModal()">
+      Close
+    </button>
+  </div>
+</div>
