@@ -7,7 +7,7 @@ yarn-error.log*
 
 # CDK Build Outputs & State
 *.js
-!source/services/**/*.js
+!microservices/**/*.js
 *.d.ts
 .cdk.staging/
 cdk.out/
