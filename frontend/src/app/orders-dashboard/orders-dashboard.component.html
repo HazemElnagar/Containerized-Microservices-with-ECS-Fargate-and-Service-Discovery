@@ -9,7 +9,12 @@
     Loading orders...
   </div>
 
-  <div *ngIf="!isLoading && orders.length === 0"
+  <div *ngIf="fetchError"
+       style="text-align: center; color: var(--danger-color); padding: 1rem; background: rgba(239,68,68,0.1); border-radius: 8px; margin-bottom: 1rem;">
+    {{ fetchError }}
+  </div>
+
+  <div *ngIf="!isLoading && !fetchError && orders.length === 0"
        style="text-align: center; color: var(--text-secondary); padding: 2rem;">
     No orders yet. Click <strong>+ New Order</strong> to place your first one!
   </div>

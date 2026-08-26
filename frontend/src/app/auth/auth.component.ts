@@ -1,6 +1,7 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ApiService } from '../core/api.service';
 
 @Component({
   selector: 'app-auth',
@@ -11,7 +12,9 @@ import { FormsModule } from '@angular/forms';
 })
 export class AuthComponent {
   @Output() loginSuccess = new EventEmitter<string>();
-  
+
+  private api = inject(ApiService);
+
   email = '';
   password = '';
   isLoading = false;
@@ -20,29 +23,20 @@ export class AuthComponent {
   async onSubmit() {
     this.isLoading = true;
     this.error = '';
-    
+
     try {
-      // Call to ALB via CloudFront /auth path
-      const response = await fetch('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: this.email, password: this.password })
+      const data = await this.api.post('/auth/login', {
+        email: this.email,
+        password: this.password
       });
-      
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-      
-      const data = await response.json();
+
       sessionStorage.setItem('session_token', data.token);
+      this.isLoading = false;
       this.loginSuccess.emit(data.token);
-    } catch (err) {
-      // Mock success for demonstration if backend is down
-      console.warn("Backend unavailable, logging in with mock data.");
-      setTimeout(() => {
-        this.isLoading = false;
-        this.loginSuccess.emit('mock_token');
-      }, 1000);
+    } catch (err: any) {
+      this.isLoading = false;
+      this.error = err.message || 'Unable to reach authentication service.';
+      console.error('[Auth] Login error:', err);
     }
   }
 }

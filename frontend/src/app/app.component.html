@@ -16,8 +16,8 @@
     <app-auth *ngIf="!isAuthenticated" (loginSuccess)="onLoginSuccess($event)"></app-auth>
     
     <ng-container *ngIf="isAuthenticated">
-      <app-orders-dashboard [token]="sessionToken"></app-orders-dashboard>
-      <app-notifications-widget [token]="sessionToken"></app-notifications-widget>
+      <app-orders-dashboard [token]="sessionToken" (orderCreated)="notifications.refreshNotifications()"></app-orders-dashboard>
+      <app-notifications-widget #notifications [token]="sessionToken"></app-notifications-widget>
     </ng-container>
   </main>
 </div>

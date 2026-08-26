@@ -1,5 +1,6 @@
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ApiService } from '../core/api.service';
 
 interface Notification {
   id: string;
@@ -16,17 +17,25 @@ interface Notification {
   templateUrl: './notifications-widget.component.html',
   styleUrl: './notifications-widget.component.css'
 })
-export class NotificationsWidgetComponent implements OnInit, OnDestroy {
+export class NotificationsWidgetComponent implements OnInit, OnDestroy, OnChanges {
   @Input() token = '';
 
   notifications: Notification[] = [];
   isOpen = false;
   private pollInterval: ReturnType<typeof setInterval> | null = null;
 
+  private api = inject(ApiService);
+
   ngOnInit() {
     this.fetchNotifications();
     // Poll the real backend every 10 seconds so new order notifications appear automatically
     this.pollInterval = setInterval(() => this.fetchNotifications(), 10000);
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['token'] && this.token && !changes['token'].isFirstChange()) {
+      this.fetchNotifications();
+    }
   }
 
   ngOnDestroy() {
@@ -47,11 +56,10 @@ export class NotificationsWidgetComponent implements OnInit, OnDestroy {
 
   async fetchNotifications() {
     try {
-      const response = await fetch('/notifications/list');
-      if (!response.ok) throw new Error('Failed');
-      this.notifications = await response.json();
-    } catch (err) {
-      console.warn('Notifications backend unavailable.');
+      this.notifications = await this.api.get('/notifications/list');
+    } catch (err: any) {
+      console.error('[Notifications] Fetch error:', err.message);
+      // Keep existing notifications rather than clearing on error
     }
   }
 
