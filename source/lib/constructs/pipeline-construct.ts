@@ -9,6 +9,8 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as codestarconnections from 'aws-cdk-lib/aws-codestarconnections';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as events_targets from 'aws-cdk-lib/aws-events-targets';
 
 export interface PipelineConstructProps {
   readonly ecsServices: Map<string, ecs.FargateService>;
@@ -56,20 +58,6 @@ export class PipelineConstruct extends Construct {
       artifactBucket: this.artifactBucket,
       restartExecutionOnUpdate: true,
       pipelineType: codepipeline.PipelineType.V2,
-      // V2 pipelines require explicit triggers — without this, the pipeline NEVER fires on push
-      triggers: [
-        {
-          providerType: codepipeline.ProviderType.CODE_STAR_SOURCE_CONNECTION,
-          gitConfiguration: {
-            sourceAction: sourceAction,
-            pushFilter: [
-              {
-                branchesIncludes: ['main'],
-              },
-            ],
-          },
-        },
-      ],
     });
 
     // Source Stage
@@ -78,22 +66,26 @@ export class PipelineConstruct extends Construct {
       actions: [sourceAction],
     });
 
-    // Grant pipeline role EventBridge permissions so V2 triggers can create
-    // the CloudWatch Events rule that listens for GitHub push events.
-    // Without this, the trigger config is inert — the pipeline never fires.
-    this.pipeline.addToRolePolicy(new iam.PolicyStatement({
-      actions: [
-        'events:DescribeRule',
-        'events:PutRule',
-        'events:DeleteRule',
-        'events:PutTargets',
-        'events:RemoveTargets',
-        'events:ListTargetsByRule',
-      ],
-      resources: [
-        `arn:aws:events:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:rule/*`,
-      ],
-    }));
+    // Explicit EventBridge rule to trigger pipeline on GitHub push to main.
+    // CodePipeline V2 automatic trigger creation with CodeStar Connections is
+    // unreliable via CloudFormation — the rule is often not provisioned. We
+    // create it explicitly here to guarantee the pipeline fires on every push.
+    const pushRule = new events.Rule(this, 'GitHubPushTriggerRule', {
+      description: 'Trigger microservices-pipeline on GitHub push to main via CodeStar Connection',
+      eventPattern: {
+        source: ['aws.codeconnections', 'aws.codestar-connections'],
+        detailType: ['Push to branch'],
+        detail: {
+          repositoryName: [
+            'Containerized-Microservices-with-ECS-Fargate-and-Service-Discovery',
+            'HazemElnagar/Containerized-Microservices-with-ECS-Fargate-and-Service-Discovery',
+          ],
+          branchName: ['main'],
+        },
+      },
+    });
+
+    pushRule.addTarget(new events_targets.CodePipeline(this.pipeline));
 
     const buildActions: codepipeline_actions.CodeBuildAction[] = [];
     const deployActions: codepipeline_actions.EcsDeployAction[] = [];
