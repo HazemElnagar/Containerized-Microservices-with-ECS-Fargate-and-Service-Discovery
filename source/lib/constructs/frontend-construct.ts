@@ -71,19 +71,10 @@ export class FrontendConstruct extends Construct {
       ]
     });
 
-    // Generate runtime API configuration so the frontend knows the ALB endpoint.
-    // By default apiBaseUrl is empty so API calls use relative paths and are
-    // routed through CloudFront (avoids mixed-content and CORS issues).
-    // Set to the ALB DNS if you need direct ALB access (requires HTTPS ALB).
-    const apiConfig = {
-      apiBaseUrl: ''
-    };
-
     // Automatically deploy the built frontend files to the S3 bucket and invalidate CloudFront
     new s3deploy.BucketDeployment(this, 'DeployFrontend', {
       sources: [
         s3deploy.Source.asset(path.join(__dirname, '../../../frontend/dist/frontend/browser')),
-        s3deploy.Source.data('api-config.json', JSON.stringify(apiConfig, null, 2)),
       ],
       destinationBucket: this.bucket,
       distribution: this.distribution,

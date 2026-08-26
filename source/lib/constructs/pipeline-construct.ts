@@ -88,40 +88,17 @@ export class PipelineConstruct extends Construct {
                 'echo Logging in to Amazon ECR...',
                 'aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URI',
                 'echo Checking for changes in microservices/$SERVICE_NAME/...',
-                // Compare HEAD against previous commit to detect changes in this service
-                'export PREV_COMMIT=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)',
-                'export CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD)',
-                'if echo "$CHANGED_FILES" | grep -q "^microservices/$SERVICE_NAME/"; then export SHOULD_BUILD=true; else export SHOULD_BUILD=false; fi',
-                'echo "SHOULD_BUILD=$SHOULD_BUILD"',
+                'export PREV_COMMIT=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD) && export CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD) && if echo "$CHANGED_FILES" | grep -q "^microservices/$SERVICE_NAME/"; then export SHOULD_BUILD=true; else export SHOULD_BUILD=false; fi && echo "SHOULD_BUILD=$SHOULD_BUILD"',
               ],
             },
             build: {
               commands: [
-                'if [ "$SHOULD_BUILD" = "true" ]; then',
-                '  echo Build started on `date`',
-                '  echo Building the Docker image...',
-                '  docker build -t $ECR_REPOSITORY_URI:latest -f microservices/$SERVICE_NAME/Dockerfile microservices/$SERVICE_NAME',
-                '  docker tag $ECR_REPOSITORY_URI:latest $ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION',
-                'else',
-                '  echo "No changes detected in microservices/$SERVICE_NAME/. Skipping build."',
-                'fi',
+                'if [ "$SHOULD_BUILD" = "true" ]; then echo "Build started on $(date)" && echo "Building the Docker image..." && docker build -t $ECR_REPOSITORY_URI:latest -f microservices/$SERVICE_NAME/Dockerfile microservices/$SERVICE_NAME && docker tag $ECR_REPOSITORY_URI:latest $ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION; else echo "No changes detected in microservices/$SERVICE_NAME/. Skipping build."; fi',
               ],
             },
             post_build: {
               commands: [
-                'if [ "$SHOULD_BUILD" = "true" ]; then',
-                '  echo Build completed on `date`',
-                '  echo Pushing the Docker image...',
-                '  docker push $ECR_REPOSITORY_URI:latest',
-                '  docker push $ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION',
-                '  export IMAGE_URI="$ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION"',
-                'else',
-                '  echo "Using existing latest image from ECR..."',
-                '  export IMAGE_URI="$ECR_REPOSITORY_URI:latest"',
-                'fi',
-                'echo Writing image definitions file...',
-                'printf \'[{"name":"%sContainer","imageUri":"%s"}]\' "$SERVICE_NAME" "$IMAGE_URI" > imagedefinitions.json',
-                'cat imagedefinitions.json',
+                'if [ "$SHOULD_BUILD" = "true" ]; then echo "Build completed on $(date)" && echo "Pushing the Docker image..." && docker push $ECR_REPOSITORY_URI:latest && docker push $ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION && export IMAGE_URI="$ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION"; else echo "Using existing latest image from ECR..." && export IMAGE_URI="$ECR_REPOSITORY_URI:latest"; fi && echo Writing image definitions file... && printf \'[{"name":"%sContainer","imageUri":"%s"}]\' "$SERVICE_NAME" "$IMAGE_URI" > imagedefinitions.json && cat imagedefinitions.json',
               ],
             },
           },
@@ -173,10 +150,7 @@ export class PipelineConstruct extends Construct {
           pre_build: {
             commands: [
               'echo Checking for changes in frontend/ or frontend-construct...',
-              'export PREV_COMMIT=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)',
-              'export CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD)',
-              'if echo "$CHANGED_FILES" | grep -qE "^(frontend/|source/lib/constructs/frontend-construct\.ts)"; then export SHOULD_BUILD=true; else export SHOULD_BUILD=false; fi',
-              'echo "SHOULD_BUILD=$SHOULD_BUILD"',
+              'export PREV_COMMIT=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD) && export CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD) && if echo "$CHANGED_FILES" | grep -qE "^(frontend/|source/lib/constructs/frontend-construct\.ts)"; then export SHOULD_BUILD=true; else export SHOULD_BUILD=false; fi && echo "SHOULD_BUILD=$SHOULD_BUILD"',
             ],
           },
           install: {
@@ -189,18 +163,11 @@ export class PipelineConstruct extends Construct {
               'if [ "$SHOULD_BUILD" = "true" ]; then cd frontend && npm run build; else echo "Skipping frontend build."; fi',
             ],
           },
-          post_build: {
-            commands: [
-              'if [ "$SHOULD_BUILD" = "true" ]; then',
-              '  echo Syncing files to S3...',
-              '  aws s3 sync frontend/dist/frontend/browser s3://$BUCKET_NAME --delete',
-              '  echo Invalidating CloudFront cache...',
-              '  aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"',
-              'else',
-              '  echo "No frontend changes detected. Skipping S3 sync and CloudFront invalidation."',
-              'fi',
-            ],
-          },
+            post_build: {
+              commands: [
+                'if [ "$SHOULD_BUILD" = "true" ]; then echo "Syncing files to S3..." && aws s3 sync frontend/dist/frontend/browser s3://$BUCKET_NAME --delete && echo "Invalidating CloudFront cache..." && aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"; else echo "No frontend changes detected. Skipping S3 sync and CloudFront invalidation."; fi',
+              ],
+            },
         },
       }),
     });

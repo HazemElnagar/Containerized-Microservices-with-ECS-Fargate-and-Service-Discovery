@@ -1,0 +1,10 @@
+{
+  "ContainerizedMicroservicesStack": {
+    "CloudFrontURL": "https://d2d2qitk4szx92.cloudfront.net",
+    "EcsFargateConstructauthImageDeployCustomResourceReport9A0EFA7F": "CodeBuild completed successfully, see the logs here: \"https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups/log-group/$252Faws$252Fcodebuild$252FEcsFargateConstructauthImag-mmSpEia1PXfa/log-events/18260ed5-85fc-4d90-9ee7-32012b8d9b19\"",
+    "CloudMapNamespaceName": "microservices.local",
+    "LoadBalancerDNS": "Contai-AlbCo-nPRVr2MfixNA-1431575479.us-east-1.elb.amazonaws.com",
+    "EcsFargateConstructnotificationsImageDeployCustomResourceReport094DA59E": "CodeBuild completed successfully, see the logs here: \"https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups/log-group/$252Faws$252Fcodebuild$252FEcsFargateConstructnotifica-ylOBOOCqCHxc/log-events/26f65404-bf56-4133-8394-46422fd3ef15\"",
+    "EcsFargateConstructordersImageDeployCustomResourceReport6A3B7D8E": "CodeBuild completed successfully, see the logs here: \"https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups/log-group/$252Faws$252Fcodebuild$252FEcsFargateConstructordersIm-VBL1dptovraX/log-events/16a8ecc3-2d4e-44e0-be0d-219bce39fcb7\""
+  }
+}
