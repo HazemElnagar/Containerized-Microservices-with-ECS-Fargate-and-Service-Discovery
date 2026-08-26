@@ -15,6 +15,8 @@ app.use((req, res, next) => {
   next();
 });
 
+// CodePipeline Test Comment
+
 // Enable AWS X-Ray Express Middleware
 app.use(AWSXRay.express.openSegment('NotificationsService'));
 

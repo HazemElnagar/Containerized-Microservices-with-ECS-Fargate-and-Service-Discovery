@@ -159,6 +159,8 @@ app.get('/orders/:id', authenticateSession, (req, res) => {
   res.status(200).json(order);
 });
 
+// CodePipeline Test Comment
+
 // Close AWS X-Ray Express Middleware
 app.use(AWSXRay.express.closeSegment());
 
