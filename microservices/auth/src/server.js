@@ -137,6 +137,8 @@ app.get('/auth/me', async (req, res) => {
 
 
 
+
+
 // Close AWS X-Ray Express Middleware
 
 app.use(AWSXRay.express.closeSegment());
