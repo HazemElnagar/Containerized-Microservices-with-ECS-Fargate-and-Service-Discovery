@@ -85,7 +85,13 @@ export class EcsFargateConstruct extends Construct {
 
     // Build and deploy Docker image to custom ECR repository during stack synthesis/deployment
     const imageDeployment = new imagedeploy.DockerImageDeployment(this, `${def.serviceName}ImageDeploy`, {
-      source: imagedeploy.Source.directory(path.join(__dirname, `../../../microservices/${def.serviceName}`)),
+      source: imagedeploy.Source.directory(
+        path.join(__dirname, `../../../microservices/${def.serviceName}`),
+        {
+          exclude: ['node_modules', '.git'],
+          ignoreMode: cdk.IgnoreMode.GLOB,
+        }
+      ),
       destination: imagedeploy.Destination.ecr(def.repository, {
         tag: 'latest',
       }),
